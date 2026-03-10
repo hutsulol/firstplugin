@@ -1,0 +1,25 @@
+name: MinecraftHUD
+version: ${project.version}
+main: com.example.hud.HudPlugin
+api-version: 1.20
+description: Custom HUD - action bar stats + boss bar health display
+authors: [ ]
+
+commands:
+  hud:
+    description: MinecraftHUD management command
+    usage: /hud <reload|show|hide>
+    permission: hud.admin
+  mana:
+    description: Manage player mana
+    usage: /mana <set|add|remove> <player> <amount>
+    permission: hud.admin
+  gold:
+    description: Manage player gold
+    usage: /gold <set|add|remove> <player> <amount>
+    permission: hud.admin
+
+permissions:
+  hud.admin:
+    description: Access to HUD admin commands
+    default: op

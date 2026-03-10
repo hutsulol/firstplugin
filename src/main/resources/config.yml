@@ -1,0 +1,36 @@
+# ============================================================
+#  MinecraftHUD Configuration
+# ============================================================
+
+# --- Icons ---
+# Replace these strings with your Unicode characters from the resource pack.
+# Example: mana: "\uE001"
+icons:
+  mana: "V"       # Blue diamond/gem icon (left of mana number)
+  health: "<3"    # Red heart icon (left of heart count)
+  exp: "*"        # Yellow star icon (right of exp/gold number)
+
+# --- Colors (hex, without #) ---
+colors:
+  mana: "5599FF"
+  health: "FF4444"
+  exp: "FFCC00"
+  health-bar-text: "FFFFFF"
+
+# --- Default player stats ---
+defaults:
+  mana: 99999999
+  max-mana: 99999999
+  gold: 99999999
+
+# --- HUD update interval in ticks (20 ticks = 1 second) ---
+# Lower = smoother updates, higher = less CPU usage.
+update-interval: 2
+
+# --- Health bar (BossBar) ---
+# The boss bar appears at the top of the screen by default.
+# Use a resource pack to reposition it near the action bar if needed.
+health-bar:
+  enabled: true
+  color: RED      # RED, GREEN, BLUE, YELLOW, PINK, PURPLE, WHITE
+  overlay: PROGRESS  # PROGRESS, NOTCHED_6, NOTCHED_10, NOTCHED_12, NOTCHED_20
