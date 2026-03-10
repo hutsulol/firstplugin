@@ -1,0 +1,1 @@
+name: FirstPlugin\nversion: 1.0\nauthor: hutsulol\nmain: com.yourplugin.MainClass\napi-version: 1.13\ndepend: [Vault]
