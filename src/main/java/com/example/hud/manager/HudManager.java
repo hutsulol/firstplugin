@@ -12,6 +12,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,12 +43,16 @@ public class HudManager {
         this.playerData = playerData;
 
         // Integers separated by dots:  99.999.999
-        DecimalFormatSymbols dotSep = new DecimalFormatSymbols();
+        // Must use Locale.ROOT to avoid conflicts with system locale decimal separators
+        DecimalFormatSymbols dotSep = new DecimalFormatSymbols(Locale.ROOT);
         dotSep.setGroupingSeparator('.');
+        dotSep.setDecimalSeparator(','); // avoid collision: grouping='.' decimal=','
         this.thousandsFormat = new DecimalFormat("#,###", dotSep);
 
         // Health with 7 decimal places:  20.0000000
-        this.healthFormat = new DecimalFormat("0.0000000", new DecimalFormatSymbols());
+        DecimalFormatSymbols healthSep = new DecimalFormatSymbols(Locale.ROOT);
+        healthSep.setDecimalSeparator('.');
+        this.healthFormat = new DecimalFormat("0.0000000", healthSep);
     }
 
     // ----------------------------------------------------------------
@@ -58,7 +63,13 @@ public class HudManager {
         int interval = plugin.getConfig().getInt("update-interval", 2);
         updateTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : plugin.getServer().getOnlinePlayers()) {
-                updateHud(player);
+                try {
+                    updateHud(player);
+                } catch (Exception e) {
+                    plugin.getLogger().severe("[MinecraftHUD] Error updating HUD for "
+                            + player.getName() + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
         }, 0L, interval);
     }
@@ -66,12 +77,18 @@ public class HudManager {
     public void addPlayer(Player player) {
         if (healthBars.containsKey(player.getUniqueId())) return;
 
-        BossBar.Color  color   = parseBossBarColor(plugin.getConfig().getString("health-bar.color",   "RED"));
+        BossBar.Color   color   = parseBossBarColor(plugin.getConfig().getString("health-bar.color",   "RED"));
         BossBar.Overlay overlay = parseBossBarOverlay(plugin.getConfig().getString("health-bar.overlay", "PROGRESS"));
 
         BossBar bar = BossBar.bossBar(Component.empty(), 1.0f, color, overlay);
         healthBars.put(player.getUniqueId(), bar);
-        player.showBossBar(bar);
+
+        // Delay by 1 tick so the client is fully ready to receive the boss bar packet
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) {
+                player.showBossBar(bar);
+            }
+        }, 1L);
     }
 
     public void removePlayer(Player player) {
@@ -99,7 +116,7 @@ public class HudManager {
         double health    = player.getHealth();
         double maxHealth = getMaxHealth(player);
 
-        // Hearts displayed as integer ceiling (e.g. 1.0 hp → 1 heart)
+        // Hearts displayed as integer ceiling (e.g. 2.0 hp → 1 heart)
         int hearts = (int) Math.ceil(health / 2.0);
 
         double mana = playerData.getMana(player);
@@ -117,21 +134,21 @@ public class HudManager {
     // ----------------------------------------------------------------
 
     private void updateActionBar(Player player, double mana, int hearts, long gold) {
-        String manaIcon   = plugin.getConfig().getString("icons.mana",   "V");
-        String heartIcon  = plugin.getConfig().getString("icons.health", "<3");
-        String expIcon    = plugin.getConfig().getString("icons.exp",    "*");
+        String manaIcon  = plugin.getConfig().getString("icons.mana",   "V");
+        String heartIcon = plugin.getConfig().getString("icons.health", "<3");
+        String expIcon   = plugin.getConfig().getString("icons.exp",    "*");
 
-        TextColor manaColor   = hexColor(plugin.getConfig().getString("colors.mana",   "5599FF"));
-        TextColor heartColor  = hexColor(plugin.getConfig().getString("colors.health", "FF4444"));
-        TextColor expColor    = hexColor(plugin.getConfig().getString("colors.exp",    "FFCC00"));
+        TextColor manaColor  = hexColor(plugin.getConfig().getString("colors.mana",   "5599FF"));
+        TextColor heartColor = hexColor(plugin.getConfig().getString("colors.health", "FF4444"));
+        TextColor expColor   = hexColor(plugin.getConfig().getString("colors.exp",    "FFCC00"));
 
         String manaStr = thousandsFormat.format((long) mana);
         String goldStr = thousandsFormat.format(gold);
 
-        Component bar = Component.text()
+        Component actionBar = Component.text()
                 // Mana section
                 .append(Component.text(manaIcon + " ", manaColor))
-                .append(Component.text(manaStr,        manaColor))
+                .append(Component.text(manaStr, manaColor))
                 // Separator
                 .append(Component.text("   "))
                 // Health section
@@ -141,10 +158,10 @@ public class HudManager {
                 .append(Component.text("   "))
                 // Gold / exp section
                 .append(Component.text(goldStr + " ", expColor))
-                .append(Component.text(expIcon,       expColor))
+                .append(Component.text(expIcon, expColor))
                 .build();
 
-        player.sendActionBar(bar);
+        player.sendActionBar(actionBar);
     }
 
     // ----------------------------------------------------------------
@@ -154,6 +171,9 @@ public class HudManager {
     private void updateHealthBar(Player player, double health, double maxHealth) {
         BossBar bar = healthBars.get(player.getUniqueId());
         if (bar == null) return;
+
+        // Re-show on every update to guarantee visibility
+        player.showBossBar(bar);
 
         String text = healthFormat.format(health) + " / " + healthFormat.format(maxHealth);
 

@@ -23,7 +23,7 @@ public final class HudPlugin extends JavaPlugin {
         hudManager = new HudManager(this, playerDataManager);
 
         getServer().getPluginManager().registerEvents(
-                new PlayerListener(hudManager, playerDataManager), this);
+                new PlayerListener(this, hudManager, playerDataManager), this);
 
         registerCommand("hud", new HudCommand(this, hudManager));
         registerCommand("mana", new ManaCommand(this, playerDataManager));
