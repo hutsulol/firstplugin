@@ -65,7 +65,7 @@ public class HudManager {
             for (Player player : plugin.getServer().getOnlinePlayers()) {
                 try {
                     updateHud(player);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     plugin.getLogger().severe("[MinecraftHUD] Error updating HUD for "
                             + player.getName() + ": " + e.getMessage());
                     e.printStackTrace();
@@ -188,8 +188,15 @@ public class HudManager {
     // ----------------------------------------------------------------
 
     private double getMaxHealth(Player player) {
-        AttributeInstance attr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        return attr != null ? attr.getValue() : 20.0;
+        // Try 1.21+ name first, then the legacy 1.20 name — resolved at runtime
+        for (String name : new String[]{"MAX_HEALTH", "GENERIC_MAX_HEALTH"}) {
+            try {
+                Attribute attr = Attribute.valueOf(name);
+                AttributeInstance inst = player.getAttribute(attr);
+                if (inst != null) return inst.getValue();
+            } catch (Throwable ignored) {}
+        }
+        return 20.0;
     }
 
     private static TextColor hexColor(String hex) {
