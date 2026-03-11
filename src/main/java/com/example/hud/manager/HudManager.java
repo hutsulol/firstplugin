@@ -61,7 +61,16 @@ public class HudManager {
 
     public void startUpdateTask() {
         int interval = plugin.getConfig().getInt("update-interval", 2);
+        plugin.getLogger().info("[MinecraftHUD] Starting update task (interval=" + interval + " ticks)");
+
+        final long[] tickCount = {0};
         updateTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            tickCount[0]++;
+            // Log a heartbeat every 5 seconds so we know the task is alive
+            if (tickCount[0] % (100 / Math.max(1, interval)) == 0) {
+                plugin.getLogger().info("[MinecraftHUD] Task alive, online players: "
+                        + plugin.getServer().getOnlinePlayers().size());
+            }
             for (Player player : plugin.getServer().getOnlinePlayers()) {
                 try {
                     updateHud(player);

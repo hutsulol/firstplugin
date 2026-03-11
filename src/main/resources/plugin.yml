@@ -8,7 +8,7 @@ authors: [ ]
 commands:
   hud:
     description: MinecraftHUD management command
-    usage: /hud <reload|show|hide>
+    usage: /hud <reload|show|hide|test>
     permission: hud.admin
   mana:
     description: Manage player mana
